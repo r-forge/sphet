@@ -1,0 +1,8 @@
+distance				method for creating distance objects
+gstslshet               GS2SLS estimation of a spatial model with heteroskedastic innovations
+stslshac                S2SLS estimation with Spatial HAC standard errors
+print.sphet				print method for class sphet
+summary.sphet           summary method for class sphet
+listw2dgCMatrix			interface between weights list and sparse Matrices
+read.gwt2dist		    interface between GWT files and distance objects
+sphet					Estimation of a spatial model with heteroskedastic innovations
