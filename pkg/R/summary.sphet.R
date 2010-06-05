@@ -14,7 +14,7 @@ summary.sphet<-function(object, width=getOption("width"),digits=getOption("digit
 		}
 	else{
 	coeff<-object$coefficients
-	vcmat<-object$vcmat
+	vcmat<-object$var
 	se<-sqrt(diag(vcmat))
    t<-coeff/se
    pval<-pnorm(abs(t),lower.tail=FALSE) * 2

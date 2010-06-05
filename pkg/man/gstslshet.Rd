@@ -1,6 +1,6 @@
 \name{gstslshet}
 \alias{gstslshet}
-
+\alias{impacts.gstsls}
 
 
 
@@ -18,7 +18,8 @@ heteroskedastic of an unknown form.
 }
 
 \usage{
-gstslshet(formula, data=list(),listw,na.action=na.fail,zero.policy=FALSE,initial.value=0.2,abs.tol=1e-20,rel.tol=1e-10,eps=1e-5,inverse=TRUE,sarar=TRUE)
+gstslshet(formula, data=list(),listw,na.action=na.fail,zero.policy=NULL,initial.value=0.2,abs.tol=1e-20,rel.tol=1e-10,eps=1e-5,inverse=TRUE,sarar=TRUE)
+\method{impacts}{gstsls}(obj, \dots, tr, R = NULL, listw = NULL, tol = 1e-06, empirical = FALSE, Q=NULL)
 }
 
 \arguments{
@@ -37,6 +38,13 @@ gstslshet(formula, data=list(),listw,na.action=na.fail,zero.policy=FALSE,initial
     \item{eps}{Tolerance level for the approximation. See Details.}
     \item{inverse}{\code{TRUE}. If \code{FALSE}, an appoximated inverse is calculated. See Details.}
     \item{sarar}{\code{TRUE}. If \code{FALSE}, a spatial error model is estimated. }
+  \item{obj}{A gstsls spatial regression object created by \code{gstslshet}}
+  \item{\dots}{Arguments passed through to methods in the \pkg{coda} package}
+  \item{tr}{A vector of traces of powers of the spatial weights matrix created using \code{trW}, for approximate impact measures; if not given, \code{listw} must be given for exact measures (for small to moderate spatial weights matrices); the traces must be for the same spatial weights as were used in fitting the spatial regression}
+  \item{R}{If given, simulations are used to compute distributions for the impact measures, returned as \code{mcmc} objects}
+  \item{tol}{Argument passed to \code{mvrnorm}: tolerance (relative to largest variance) for numerical lack of positive-definiteness in the coefficient covariance matrix}
+  \item{empirical}{Argument passed to \code{mvrnorm} (default FALSE): if true, the coefficients and their covariance matrix specify the empirical not population mean and covariance matrix}
+  \item{Q}{default NULL, else an integer number of cumulative power series impacts to calculate if \code{tr} is given}
 }
 
 \details{
@@ -72,7 +80,7 @@ is set to 1e-5.}
 \value{
 A list object of class \code{sphet}
 \item{coefficients}{Generalized Spatial two stage least squares coefficient estimates of \eqn{\delta} and GM estimator for \eqn{\rho}. }
-\item{vcmat}{variance-covariance matrix of the estimated coefficients}
+\item{var}{variance-covariance matrix of the estimated coefficients}
 \item{s2}{GS2SLS residuals variance}
 \item{residuals}{GS2SLS residuals}
 \item{yhat}{difference between GS2SLS residuals and response variable}

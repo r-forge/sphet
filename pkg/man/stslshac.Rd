@@ -12,7 +12,7 @@ where \eqn{R} is a non-stochastic matrix.
 }
 
 \usage{
-stslshac(formula, data=list(),listw,na.action=na.fail,zero.policy=FALSE,
+stslshac(formula, data=list(),listw,na.action=na.fail,zero.policy=NULL,
 HAC=TRUE, distance=NULL,type=c("Epanechnikov","Triangular","Bisquare","Parzen", "QS","TH"), 
 bandwidth="variable",W2X=TRUE)
 }

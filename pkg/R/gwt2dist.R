@@ -67,7 +67,7 @@ else 	n<-length(unique(region.id))
     }
 #    result<-list(neigh=res, weights=weights)
     result<-res
-    class(result)<-c("sphet","distance","nb", "GWT")##modified 03/11/2010
+    class(result)<-c("sphet","distance","nb", "GWT") ##modified 03/11/2010
     
     attr(result, "region.id") <- region.id
     attr(result, "neighbours.attrs") <- as.character(NA)

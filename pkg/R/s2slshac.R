@@ -1,12 +1,17 @@
-stslshac<-function(formula, data=list(),listw,na.action=na.fail,zero.policy=FALSE,HAC=TRUE, distance=NULL,type=c("Epanechnikov","Triangular","Bisquare","Parzen", "QS","TH"), bandwidth="variable",W2X=TRUE){
+stslshac<-function(formula, data=list(),listw,na.action=na.fail,zero.policy=NULL,HAC=TRUE, distance=NULL,type=c("Epanechnikov","Triangular","Bisquare","Parzen", "QS","TH"), bandwidth="variable",W2X=TRUE){
 
 ##functions that need to be sourced
 	#source("twostagels.R")
 	#source("kernelsfun.R")	
 #extract model objects	
 	
+	if (is.null(zero.policy))
+            zero.policy <- get.ZeroPolicyOption()
+        stopifnot(is.logical(zero.policy))
+
+	
 	mt<-terms(formula,data=data)
-	mf<-lm(formula, data, na.action=na.fail,method="model.frame")
+	mf<-lm(formula, data, na.action=na.action,method="model.frame")
 	na.act<-attr(mf,'na.action')
 
 
@@ -86,7 +91,7 @@ instr<-cbind(WX,WWX)
 
 ##spatial two stage least square of the initial model
 #print(type)
-results<-tsls(y=y,yend=wy, X=x, Zinst = instr, HAC=HAC, type=type, bandwidth=bandwidth, distance=distance)
+results<-tsls(y=y,yend=wy, X=x, Zinst = instr, HAC=HAC, type=type, bandwidth=bandwidth, distance=distance, zero.policy=zero.policy)
 model.data<-data.frame(cbind(y,x[,-1]))
 
 results$call<-cl
@@ -95,7 +100,8 @@ results$type<-type
 results$bandwidth<-bandwidth
 results$method<-"s2slshac"
 results$HAC<-HAC
-class(results)<-"sphet"
+results$zero.policy<-zero.policy
+class(results)<-c("sphet", "stsls")
 
 return(results)
 }

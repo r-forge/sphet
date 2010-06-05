@@ -6,11 +6,12 @@
 }
 
 \usage{
-listw2dgCMatrix(listw) 
+listw2dgCMatrix(listw, zero.policy = NULL) 
 }
 
 \arguments{
 \item{listw}{a \code{listw} object created for example by \code{nb2listw} }
+  \item{zero.policy}{See \code{lagsarlm} for details}
 }
 
 

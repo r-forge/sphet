@@ -1,10 +1,13 @@
-gstslshet<-function(formula, data=list(),listw,na.action=na.fail,zero.policy=FALSE,initial.value=0.2,abs.tol=1e-20,rel.tol=1e-10,eps=1e-5,inverse=TRUE,sarar=TRUE){
+gstslshet<-function(formula, data=list(),listw,na.action=na.fail,zero.policy=NULL,initial.value=0.2,abs.tol=1e-20,rel.tol=1e-10,eps=1e-5,inverse=TRUE,sarar=TRUE){
 
 ##functions that need to be sourced
 	#source("twostagels.R")
 	#source("utilities.R")
 	#source("listw2dgCMatrix.R")
 	#source("Omega.R")
+	if (is.null(zero.policy))
+            zero.policy <- get.ZeroPolicyOption()
+        stopifnot(is.logical(zero.policy))
 	
 #extract model objects	
 	
@@ -156,7 +159,7 @@ W<-list(stat=stat,pval=pval)
 
 
 
-results<-list(coefficients=coeff,vcmat=Omfinal$VarCov, s2=s2, call=cl, residuals=as.numeric(utildeb), model=model.data,method=method,W=W,yhat=secstepb$yhat )
+results<-list(coefficients=coeff,var=Omfinal$VarCov, s2=s2, call=cl, residuals=as.numeric(utildeb), model=model.data,method=method,W=W,yhat=secstepb$yhat )
 }
 else{
 	##this is an error model estimated by ols
@@ -219,12 +222,47 @@ model.data<-data.frame(cbind(y,x[,-1]))
 method<-"gs2slshac"
 
 
-results<-list(coefficients=coeff,vcmat=Omfinal$VarCov, s2=s2, call=cl, residuals=as.numeric(utildeb), model=model.data,method=method,W=NULL,yhat=fitted(secstepb) )
+results<-list(coefficients=coeff,var=Omfinal$VarCov, s2=s2, call=cl, residuals=as.numeric(utildeb), model=model.data,method=method,W=NULL,yhat=fitted(secstepb) )
 
 	
 	}
 
-class(results)<-"sphet"
+class(results)<-c("sphet", "gstsls")
 
 return(results)
 }
+
+impacts.gstsls <- function(obj, ..., tr=NULL, R=NULL, listw=NULL,
+    tol=1e-6, empirical=FALSE, Q=NULL) {
+    if (!is.null(obj$listw_style) && obj$listw_style != "W") 
+        stop("Only row-standardised weights supported")
+    coefs <- drop(obj$coefficients)
+    p2 <- length(coefs)
+    rho <- coefs[(p2-1)]
+    beta <- coefs[1:(p2-2)]
+    lambda <- coefs[p2]
+# rho is lag coef., lambda is error coef (reversed from function use)
+    icept <- grep("(Intercept)", names(beta))
+    iicept <- length(icept) > 0
+    if (iicept) {
+        P <- matrix(beta[-icept], ncol=1)
+        bnames <- names(beta[-icept])
+    } else {
+        P <- matrix(beta, ncol=1)
+        bnames <- names(beta)
+    }
+    p <- length(beta)
+    n <- length(obj$residuals)
+    mu <- c(beta, rho, lambda)
+    Sigma <- obj$var
+    irho <- p2-1
+    drop2beta <- c(p2-1, p2)
+    res <- spdep:::intImpacts(rho=rho, beta=beta, P=P, n=n, mu=mu,
+        Sigma=Sigma, irho=irho, drop2beta=drop2beta, bnames=bnames,
+        interval=NULL, type="lag", tr=tr, R=R, listw=listw, tol=tol,
+        empirical=empirical, Q=Q, icept=icept, iicept=iicept, p=p)
+    attr(res, "iClass") <- class(obj)
+    res
+}
+
+

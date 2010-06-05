@@ -1,4 +1,4 @@
-tsls <- function(y,yend,X,Zinst,end, reg, yor, modified=FALSE, HAC=FALSE, distance=distance,  type=c("Epanechnikov","Triangular","Bisquare","Parzen", "QS","TH"), bandwidth=bandwidth) {
+tsls <- function(y,yend,X,Zinst,end, reg, yor, modified=FALSE, HAC=FALSE, distance=distance,  type=c("Epanechnikov","Triangular","Bisquare","Parzen", "QS","TH"), bandwidth=bandwidth, zero.policy=zero.policy) {
 ### estimation engine that deals with the various cases
 #silent<-set.VerboseOption(FALSE)
 if(modified){
@@ -12,7 +12,7 @@ if(modified){
 	ZpZpi <- solve(ZpZp)
 	Zpy <- crossprod(Zp,y)
 	delta <- crossprod(ZpZpi,Zpy)
-	rownames(delta)<-c(colnames(yend), colnames(X))
+	names(delta)<-c(colnames(yend), colnames(X))
 	Z1<-cbind(end, reg)
 	yp <- Z1 %*% delta
     e <- yor - yp
@@ -37,7 +37,7 @@ else	H <- cbind(X,Zinst)
 	ZpZpi <- solve(ZpZp)
 	Zpy <- crossprod(Zp,y)
 	delta <- crossprod(ZpZpi,Zpy)
-	rownames(delta)<-c(colnames(yend), colnames(X))
+	names(delta)<-c(colnames(yend), colnames(X))
 	yp <- Z %*% delta
 	e <- y - yp
 if(HAC){
@@ -62,9 +62,16 @@ if(HAC){
 #					print(bandwith)
 #print(ker.fun)
 #print(is.numeric(bandwith))
-Ker<-lapply(attributes(distance)$GeoDa$dist,ker.fun, bandwidth=bandwidth)
+if(is.null(attributes(distance)$GeoDa$dist)){
+	Ker<-lapply(distance$weights,ker.fun, bandwidth=bandwidth)
+	Kern<-nb2listw(distance$neighbours,style="B", glist=Ker, zero.policy=zero.policy)
+	} 
+else{
+	Ker<-lapply(attributes(distance)$GeoDa$dist,ker.fun, bandwidth=bandwidth)
+	Kern<-nb2listw(distance,style="B", glist=Ker, zero.policy=zero.policy)
+	} 
 #print(Ker[[1]])
-Kern<-nb2listw(distance,style="B", glist=Ker)
+
 #print(Kern$weights[[1]])
 He<-matrix(,dim(H)[1],dim(H)[2])
 #KHpe<-matrix(,dim(H)[1],dim(H)[2])
@@ -73,7 +80,7 @@ for (i in 1:dim(H)[2]) He[,i]<- H[,i] * e
 #	for (i in 1:n) KHpe[i,j]<- sum(Ker[[i]]*He[distance$neigh[[i]],j])  + He[i,j]
 #	 }
 
-KHpe<-lag.listw(Kern,He) +He
+KHpe<-lag.listw(Kern,He, zero.policy=zero.policy) +He
 KHeHe<-(t(He) %*% KHpe)
 #KHeHe<-crossprod(He, KHpe)
 HHp<-solve(HH)
@@ -95,7 +102,7 @@ else{
 #	    pdelta <- pnorm(abs(tdelta),lower.tail=FALSE) * 2
 }
 
-	    result <- list(coefficients=delta,vcmat=vardelta,s2=s2,
+	    result <- list(coefficients=delta,var=vardelta,s2=s2,
 	          residuals=as.numeric(e),yhat=yp)
 }	          
 	result

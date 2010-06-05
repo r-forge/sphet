@@ -1,6 +1,6 @@
 Package: sphet
-Version: 1.0-0
-Date: 2009-12-17
+Version: 1.0-3
+Date: 2010-06-05
 Title: Spatial Models with heteroskedastic innovations
 Author: Gianfranco Piras <gpiras@mac.com>
 Maintainer: Gianfranco Piras <gpiras@mac.com>
@@ -9,3 +9,4 @@ Description: GM estimation and Spatial HAC
 License: GPL-2
 LazyLoad: yes
 LazyData: no
+
