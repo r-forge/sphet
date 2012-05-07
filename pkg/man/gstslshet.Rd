@@ -3,7 +3,6 @@
 \alias{impacts.gstsls}
 
 
-
 \title{GM estimation of a Cliff-Ord type model with Heteroskedastic Innovations }
 
 \description{Multi step GM/IV estimation of a linear Cliff and Ord -type of model

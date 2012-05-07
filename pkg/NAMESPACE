@@ -3,7 +3,7 @@ import(nlme)
 import(spdep)
 import(Matrix)
 
-export(distance,gstslshet,read.gwt2dist,stslshac,summary.sphet, print.sphet, listw2dgCMatrix,impacts.gstsls)
+export(distance,gstslshet,read.gwt2dist,stslshac,summary.sphet, print.sphet, listw2dgCMatrix,impacts.gstsls,spreg)
 
 
 
