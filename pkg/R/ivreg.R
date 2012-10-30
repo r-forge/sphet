@@ -64,3 +64,56 @@ else{
 	result <- list(coefficients=delta, var=vardelta, s2=s2, residuals=as.numeric(e), yhat=yp)
 	return(result)
 }
+
+
+
+
+
+
+
+
+
+hac.ols<-function(y, x, HAC = HAC, distance = distance, type = c("Epanechnikov","Triangular","Bisquare","Parzen", "QS","TH"), bandwidth = bandwidth){
+	df <- nrow(x) - ncol(x)
+    xpx<-crossprod(x)
+    xpxi<-solve(xpx)
+	xpy<-crossprod(x, y)
+	delta <- crossprod(xpxi, xpy)
+	yp <- x %*% delta
+	e <- y - yp
+
+	n<-nrow(x)
+		Ker<-vector(mode='list',length=n)
+		ker.fun<-switch(match.arg(type), Triangular={
+			triangular
+			}, Epanechnikov={
+				epan
+				}, Bisquare = {
+					bisq
+					}, TH={
+						th
+						}, QS = {
+							qs
+							}, Parzen = {
+								parzen
+								})
+								
+if(is.null(attributes(distance)$GeoDa$dist)){
+	Ker<-lapply(distance$weights,ker.fun, bandwidth=bandwidth)
+	Kern<-nb2listw(distance$neighbours,style="B", glist=Ker)
+	} 
+else{
+	Ker<-lapply(attributes(distance)$GeoDa$dist,ker.fun, bandwidth=bandwidth)
+	Kern<-nb2listw(distance,style="B", glist=Ker)
+	} 
+xe<-matrix(,dim(x)[1],dim(x)[2])
+for (i in 1:dim(x)[2]) xe[,i]<- x[,i] * e
+
+Kxpe<-lag.listw(Kern,xe) +xe
+Kxexe<-(t(xe) %*% Kxpe)
+vardelta<- (xpxi %*% Kxexe%*% xpxi)
+s2 <- crossprod(e) / df
+	
+	result <- list(coefficients=delta, var=vardelta, s2=s2, residuals=as.numeric(e), yhat=yp)
+	return(result)
+}

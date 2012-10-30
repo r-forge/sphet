@@ -19,9 +19,12 @@ Omega<-function(n, gamma, H, param, G, FIinv, a, FI, P, gammas,Ws) {
      JFIinv<-crossprod(J,FIinv)
      OM1<- JFJ %*% JFIinv 
      OM2<- FIinv %*% J %*% JFJ
-     OMEGA1r1<-cbind(t(P), matrix(0, nrow= nrow(t(P)), ncol= ncol(OM1)))
-     OMEGA1r2<-cbind(matrix(0, nrow= nrow(OM1), ncol= ncol(t(P))), OM1)
+     P<-as.matrix(P)
+      OMEGA1r1<-cbind(t(P),  matrix(0, nrow = nrow(t(P)), ncol= ncol(OM1)) )
+     OMEGA1r2<-cbind(matrix(0, nrow= nrow(OM1), ncol = ncol(t(P)) ), OM1)
+
      OMEGA1<- rbind(OMEGA1r1, OMEGA1r2)
+     
      OMEGA2r1<-cbind(P, matrix(0, nrow= nrow(P), ncol= ncol(OM2)))
 	 OMEGA2r2<-cbind(matrix(0, nrow= nrow(OM2), ncol= ncol(P)), OM2)
      OMEGA2<-rbind(OMEGA2r1, OMEGA2r2)
@@ -39,13 +42,23 @@ Omega<-function(n, gamma, H, param, G, FIinv, a, FI, P, gammas,Ws) {
      w<-rbind(1, 2*param)
      J<-G %*% w
      JFJ1<- t(J) %*% FIinv %*% J
-     JFJ<- JFJ1^(-1)
+     JFJ<- solve(JFJ1)
      JFIinv<-crossprod(J,FIinv)
-     OM1<- JFJ %*% JFIinv 
-     OM2<- FIinv %*% J %*% JFJ
-     OMEGA1r1<-cbind(t(P), matrix(0, nrow= nrow(t(P)), ncol= ncol(OM1)))
-     OMEGA1r2<-cbind(matrix(0, nrow= nrow(OM1), ncol= ncol(t(P))), OM1)
-     OMEGA1<- rbind(OMEGA1r1, OMEGA1r2)
+     OM1<- as.matrix(JFJ %*% JFIinv )
+     OM2<- as.matrix(FIinv %*% J %*% JFJ)
+     # print(dim(P))
+     # print(dim(OM1))
+      # print(matrix(0, nrow= nrow(t(P)), ncol= ncol(OM1) ))
+      # print(t(P))
+      P<-as.matrix(P)
+
+     OMEGA1r1<-cbind(t(P),  matrix(0, nrow = nrow(t(P)), ncol= ncol(OM1)) )
+     OMEGA1r2<-cbind(matrix(0, nrow= nrow(OM1), ncol = ncol(t(P)) ), OM1)
+     # print(OMEGA1r1)
+     # print(dim(OMEGA1r2))
+
+     OMEGA1 <- rbind(OMEGA1r1, OMEGA1r2)
+# print(OMEGA1)
      OMEGA2r1<-cbind(P, matrix(0, nrow= nrow(P), ncol= ncol(OM2)))
 	 OMEGA2r2<-cbind(matrix(0, nrow= nrow(OM2), ncol= ncol(P)), OM2)
 	 OMEGA2<-rbind(OMEGA2r1, OMEGA2r2)

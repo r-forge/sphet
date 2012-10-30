@@ -193,7 +193,7 @@ rhotilde<- GMMfeas3$par
 # print(rhotilde)
 
 fi1<-fierror(x,listw,ubase,rhotilde,n,inverse=inverse,eps=eps)
-Om<-Omega(n,gamma=fi1$res1,H=x, param=rhotilde,G=int1$bigG,FIinv=fi1$nlw,a=fi1$a,FI=fi1$nl,P=fi1$P,gammas=fi1$gammas,Ws=fi1$Ws) ## in an error model H=X
+Om<-Omega(n,gamma=fi1$res1, H=x, param=rhotilde,G=int1$bigG,FIinv=fi1$nlw,a=fi1$a,FI=fi1$nl,P=fi1$P,gammas=fi1$gammas,Ws=fi1$Ws) ## in an error model H=X
 #####################
 
 
@@ -207,15 +207,15 @@ utildeb<-y - x %*% as.matrix(coefficients(secstepb))
 
 int1b<-Ggfastfast(listw, utildeb,n, zero.policy = zero.policy)
 
-psippb<-fistslserror(reg=xt, Ws=fi$Ws, resid=utildeb, param=rhotilde,solo=x)
+psippb<-fistslserror(reg=x, Ws=fi$Ws, resid=utildeb, param=rhotilde, solo = cbind(x,lag.listw(listw,x[,-1], zero.policy=zero.policy)))
 pars1<-rhotilde
 
 
 GMMstsls1b<-nlminb(pars1, arg1, lower= -0.9 + .Machine$double.eps , upper= 0.9 -  .Machine$double.eps,control=list(abs.tol=abs.tol,rel.tol=rel.tol),v=int1b, VC=psippb$nlw)
 
 rhohat<-GMMstsls1b$par
-psifinal<-fistslserror(reg=xt, Ws=fi$Ws, resid=utildeb, param=rhohat,solo=x)
-Omfinal<- Omegabis(gammas=psifinal$res1, Hs=x, param=rhohat, G=int1b$bigG, FIinv=psifinal$nlw, as=psifinal$a, n, FI=psifinal$nl, P=psifinal$P) 
+psifinal<-fistslserror(reg=x, Ws=fi$Ws, resid=utildeb, param=rhohat,solo=cbind(x,lag.listw(listw,x[,-1], zero.policy=zero.policy)))
+Omfinal<- Omegabis(gammas=psifinal$res1, Hs = cbind(x,lag.listw(listw,x[,-1], zero.policy=zero.policy)) , param=rhohat, G=int1b$bigG, FIinv=psifinal$nlw, as=psifinal$a, n, FI=psifinal$nl, P=psifinal$P) 
 coef<-coefficients(secstepb)
 coeff<-as.matrix(c(coef, rhohat ))
 rownames(coeff)<-c(xcolnames, 'rho')

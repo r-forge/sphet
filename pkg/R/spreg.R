@@ -31,7 +31,10 @@ if(HAC){
 	if(!inherits(distance,"distance")) 
 	stop("The distance measure is not a distance object")
 if(!(type %in% c("Epanechnikov","Triangular","Bisquare","Parzen", "QS","TH"))) stop("Unknown kernel")
-	
+
+if(model == "ivhac" && is.null(endog)) stop("endogenous variable should be specified")
+if(model == "ivhac" && is.null(instruments)) stop("ivhac needs instrumental variables")
+
 }	
 	
 #fix the dimensions of the problem
@@ -61,7 +64,7 @@ if (k > 1) {
     }
 
 
-if(!is.null(listw2) && model == "sarar") stop("listw2 can be specified only with sarar")
+if(!is.null(listw2) && model != "sarar") stop("listw2 can be specified only with sarar")
 
 if(is.null(listw2)) {
 	twow <- FALSE		
@@ -199,8 +202,8 @@ if(is.null(colnames(endog)))  endognames <- rep("endogenous", ncol(endog))
  Zmat<- cbind(x, endog)            
 colnames(Zmat) <- c(colnames(x), endognames) 
 
-if (K==2) Hmat<-cbind(x,wx, AddH) 
-else Hmat<-cbind(1, x, wx, AddH)
+if (K==2) Hmat<-cbind(x, AddH) 
+else Hmat<-cbind(1, x,  AddH)
 
  }
  
@@ -212,15 +215,17 @@ else Hmat<-cbind(1, x,wx)
 
 }
 	
-# print(Hmat)
+	
+ # print(Hmat)
+ # print(Zmat)
 # Hmat<-Hmat[,c(1,2)]
 if(model %in% c("sarar","error")){
 
 # Hmat<-Hmat[,c(1,2)]
 
-firststep<-spatial.ivreg(y =y , Zmat = Zmat, Hmat = Hmat, het = het, HAC=HAC, type=type, bandwidth=bandwidth, distance=distance)
+firststep<-spatial.ivreg(y = y , Zmat = Zmat, Hmat = Hmat, het = het, HAC=HAC, type=type, bandwidth=bandwidth, distance=distance)
 ubase<-residuals(firststep)
-
+ # print(firststep$coefficients)
 
 if (initial.value=="SAR"){
 		Wubase<-Ws2 %*% ubase
@@ -236,16 +241,20 @@ Ggmat<-gg_het(Ws2, ubase, n)
 optres <-nlminb(pars, optimfunct, lower= -0.9 + .Machine$double.eps , upper= 0.9 -  .Machine$double.eps,control=list(abs.tol=abs.tol,rel.tol=rel.tol),v=Ggmat, verbose = verbose)
 
 rhotilde<-optres$par
-# print(rhotilde)
+ # print(rhotilde)
 
 if(step1.c){
-gmm.weghts1.c<-psirhorho_het(rhotilde, ubase, Hmat, Zmat, Ws2, step1.c = TRUE)
+ gmm.weghts1.c<-psirhorho_het(rhotilde, ubase, Hmat, Zmat, Ws2, step1.c = TRUE)
  # print(gmm.weghts1.c$Phiinv)
+# gmm.weghts1.c<-psirhorho_het_mod(rhotilde, ubase, Hmat, Zmat, Ws2, step1.c = TRUE)
+
 
 optres <- nlminb(rhotilde, optimfunct_eff, v = Ggmat, vcmat= gmm.weghts1.c$Phiinv, verbose = verbose, lower= -0.9 + .Machine$double.eps , upper= 0.9 -  .Machine$double.eps,control=list(abs.tol=abs.tol,rel.tol=rel.tol))	
 
 rhotilde<-optres$par
 gmm.weghts1.c<-psirhorho_het(rhotilde, ubase, Hmat, Zmat, Ws2, step1.c = TRUE)
+
+# gmm.weghts1.c<-psirhorho_het_mod(rhotilde, ubase, Hmat, Zmat, Ws2, step1.c = TRUE)
 
 vcmat_2sls <- Omega_het(rhotilde, gmm.weghts1.c$Pmat, gmm.weghts1.c$A1, gmm.weghts1.c$A2, gmm.weghts1.c$a.vec1, gmm.weghts1.c$a.vec2, Hmat, Ggmat$bigG, gmm.weghts1.c$Phiinv, gmm.weghts1.c$epsilon, gmm.weghts1.c$Zstar, Ws2, step1.c = TRUE)
 
@@ -284,7 +293,7 @@ else{
 Ggmat<-gg_hom(Ws2, ubase, n)
 optres <- nlminb(pars, optimfunct, lower= -0.9 + .Machine$double.eps , upper= 0.9 -  .Machine$double.eps,control=list(abs.tol=abs.tol,rel.tol=rel.tol), v = Ggmat, verbose = verbose)
 rhotilde<-optres$par
-	
+# print(rhotilde)	
 	}
 	
 
@@ -298,52 +307,52 @@ Zt <- Zmat - rhotilde * wZmat
 # if(!sarar && is.matrix(endog)) Hmat <- cbind(x, wx, instruments)	
 # else Hmat<- cbind(x,wx)	
 
-#print(Hmat)
+# print(Hmat)
     secondstep<-spatial.ivreg(y =yt , Zmat = Zt, Hmat = Hmat, het = het, HAC=HAC, type=type, bandwidth=bandwidth, distance=distance)
 delta <- coefficients(secondstep)
 utildeb <- y - Zmat %*% delta
- #print(delta)
+  # print(delta)
 
 if(het){
 
 
 Ggmat<-gg_het(Ws2, utildeb, n)
 
- gmm.weghts<-psirhorho_het(rhotilde, utildeb, Hmat, Zmat, Ws2, step1.c = FALSE)
+  gmm.weghts<-psirhorho_het(rhotilde, utildeb, Hmat, Zmat, Ws2, step1.c = FALSE)
 
-# gmm.weghts<-psirhorho_het_mod(rhotilde, utildeb, Hmat, Zmat, Ws2, step1.c = FALSE)
+ # gmm.weghts<-psirhorho_het_mod(rhotilde, utildeb, Hmat, Zmat, Ws2, step1.c = FALSE)
 
 # print(gmm.weghts$Phiinv)
 optres <- nlminb(rhotilde, optimfunct_eff, v = Ggmat, vcmat= gmm.weghts$Phiinv, verbose = verbose, lower= -0.9 + .Machine$double.eps , upper= 0.9 -  .Machine$double.eps,control=list(abs.tol=abs.tol,rel.tol=rel.tol))	
 
 rhofin<-optres$par
- gmm.weghts<-psirhorho_het(rhofin, utildeb, Hmat, Zmat, Ws2, step1.c = FALSE)
+	 gmm.weghts<-psirhorho_het(rhofin, utildeb, Hmat, Zmat, Ws2, step1.c = FALSE)
 
  # gmm.weghts<-psirhorho_het_mod(rhofin, utildeb, Hmat, Zmat, Ws2, step1.c = FALSE)
 
-vcmat <- Omega_het(rhofin, gmm.weghts$Pmat, gmm.weghts$A1, gmm.weghts$A2, gmm.weghts$a.vec1, gmm.weghts$a.vec2, Hmat, Ggmat$bigG, gmm.weghts$Phiinv, gmm.weghts$epsilon, gmm.weghts$Zstar, Ws2, step1.c = FALSE)
-
+ vcmat <- Omega_het(rhofin, gmm.weghts$Pmat, gmm.weghts$A1, gmm.weghts$A2, gmm.weghts$a.vec1, gmm.weghts$a.vec2, Hmat, Ggmat$bigG, gmm.weghts$Phiinv, gmm.weghts$epsilon, gmm.weghts$Zstar, Ws2, step1.c = FALSE)
+# vcmat <- Omega_het_mod(rhofin, gmm.weghts$Pmat, gmm.weghts$A1, gmm.weghts$A2, gmm.weghts$a.vec1, gmm.weghts$a.vec2, Hmat, Ggmat$bigG, gmm.weghts$Phiinv, gmm.weghts$epsilon, gmm.weghts$Zstar, Ws2, step1.c = FALSE)
 }
 
 else{
 	
 Ggmat<-gg_hom(Ws2, utildeb, n)
 
- gmm.weghts<-psirhorho_hom(rhotilde, utildeb, Hmat, Zmat, Ws2, Ggmat$d, Ggmat$v.vec )
+   gmm.weghts<-psirhorho_hom(rhotilde, utildeb, Hmat, Zmat, Ws2, Ggmat$d, Ggmat$v.vec )
 
-# gmm.weghts<-psirhorho_hom_mod(rhotilde, utildeb, Hmat, Zmat, Ws2, Ggmat$d, Ggmat$v.vec )
+   # gmm.weghts<-psirhorho_hom_mod(rhotilde, utildeb, Hmat, Zmat, Ws2, Ggmat$d, Ggmat$v.vec )
 
 
 optres <- nlminb(rhotilde, optimfunct_eff, v = Ggmat, vcmat= gmm.weghts$Phiinv, verbose = verbose, lower= -0.9 + .Machine$double.eps , upper= 0.9 -  .Machine$double.eps,control=list(abs.tol=abs.tol,rel.tol=rel.tol))	
 
 rhofin<-optres$par
+ # print(rhofin)
+     gmm.weghts<-psirhorho_hom(rhofin, utildeb, Hmat, Zmat, Ws2, Ggmat$d, Ggmat$v.vec )
+     # gmm.weghts<-psirhorho_hom_mod(rhofin, utildeb, Hmat, Zmat, Ws2, Ggmat$d, Ggmat$v.vec )
 
-  gmm.weghts<-psirhorho_hom(rhofin, utildeb, Hmat, Zmat, Ws2, Ggmat$d, Ggmat$v.vec )
- # gmm.weghts<-psirhorho_hom_mod(rhofin, utildeb, Hmat, Zmat, Ws2, Ggmat$d, Ggmat$v.vec )
+      vcmat <- Omega_hom(rhofin, gmm.weghts$Pmat, gmm.weghts$A1, gmm.weghts$A2, gmm.weghts$a.vec1, gmm.weghts$a.vec2, Hmat, Ggmat$bigG, gmm.weghts$Phiinv, gmm.weghts$epsilon, gmm.weghts$Zstar)
 
-  vcmat <- Omega_hom(rhofin, gmm.weghts$Pmat, gmm.weghts$A1, gmm.weghts$A2, gmm.weghts$a.vec1, gmm.weghts$a.vec2, Hmat, Ggmat$bigG, gmm.weghts$Phiinv, gmm.weghts$epsilon, gmm.weghts$Zstar)
-
- # vcmat <- Omega_hom_mod(rhofin, gmm.weghts$Pmat, gmm.weghts$A1, gmm.weghts$A2, Hmat, Ggmat$bigG, gmm.weghts$Phiinv, gmm.weghts$epsilon, gmm.weghts$Zstar)
+     # vcmat <- Omega_hom_mod(rhofin, gmm.weghts$Pmat, gmm.weghts$A1, gmm.weghts$A2,gmm.weghts$a.vec1, gmm.weghts$a.vec2, Hmat, Ggmat$bigG, gmm.weghts$Phiinv, gmm.weghts$epsilon, gmm.weghts$Zstar)
 
 	}
 
@@ -392,6 +401,55 @@ results <-spatial.ivreg(y =y , Zmat = Zmat, Hmat = Hmat, het = het, HAC=HAC, typ
     class(results) <- c("sphet", "stsls")
  
  	}
+ 	
+if(model == "ols")	{
+	results <-hac.ols(y =y , x = x, HAC=HAC, type=type, bandwidth=bandwidth, distance=distance)	
+     model.data <- data.frame(cbind(y, x[, -1]))
+    results$call <- cl
+    results$model <- model.data
+    results$type <- type
+    results$bandwidth <- bandwidth
+    results$method <- "olshac"
+    results$HAC <- HAC
+    class(results) <- c("sphet")
+
+}
+
+if(model == "ivhac")	{
+	
+if (is.character(endog)) {
+        	endognames <- endog  
+            xend <- match(endog, colnames(data))
+            endog <- data[, xend]
+            endog <- as.matrix(endog) 
+            colnames(endog) <- endognames
+        }
+        
+endog <- as.matrix(endog)             
+if(is.null(colnames(endog)))  endognames <- rep("endogenous", ncol(endog))  
+
+
+         if (is.character(instruments)) {
+            inst <- match(instruments, colnames(data))
+            instruments <- data[, inst]
+        }
+instruments <- as.matrix(instruments)   
+
+
+	Zmat <- cbind(x,endog)
+	Hmat<-cbind(x,instruments)
+	results <-spatial.ivreg(y =y, Zmat = Zmat, Hmat = Hmat, HAC=HAC, type=type, bandwidth=bandwidth, distance=distance)	
+     model.data <- data.frame(cbind(y, x[, -1]))
+    results$call <- cl
+    results$model <- model.data
+    results$type <- type
+    results$bandwidth <- bandwidth
+    results$method <- "ivhac"
+    results$HAC <- HAC
+    class(results) <- c("sphet")
+
+}
+
 
  return(results)
 }

@@ -175,6 +175,7 @@ psirhorho_het<-function(rho, residuals, Hmat, Zmat, Ws, step1.c){
 if(step1.c)	Zstar <- Zmat
 else Zstar<- Zmat - rho * Ws %*% Zmat
 
+ # print(dim(Zstar))
 	epsilon<- residuals - rho * Ws %*% residuals 
     
 	Qhz<-crossprod(Hmat,Zstar)/n
@@ -374,3 +375,140 @@ else{
 list(Phi = Phi, Phiinv = Phiinv, Pmat= Pmat, A1 = A1, A2 =A2, a.vec1 = a.vec1, a.vec2 = a.vec2, epsilon = epsilon, Zstar = Zstar )		
 	}
 
+
+
+
+psirhorho_hom_mod <- function(rho, residuals, Hmat, Zmat, Ws, d, v.vec){
+	n <- length(residuals)  
+	epsilon<- residuals - rho * Ws %*% residuals 
+	
+	mu3<- sum(epsilon^3) /n 
+	mu4<- sum(epsilon^4) /n 	
+	sigma2<-crossprod(epsilon)/n
+	
+	Zstar <- Zmat - rho * Ws %*% Zmat
+	Qhz<-crossprod(Hmat,Zstar)/n
+	Qhh<-crossprod(Hmat)/n
+	Qhhi<-solve(Qhh)
+	sec.part<- t(Qhz) %*% Qhhi %*% Qhz
+	Pmat<-Qhhi %*% Qhz %*% solve(sec.part)
+	Tmat<-Hmat %*% Pmat	
+	
+    trA2A2 <- sum(Ws^2) 
+    trA2A2I<- Matrix(diag(n), sparse=TRUE)* (trA2A2/n)
+	A1 <- v.vec * (crossprod(Ws) - trA2A2I)
+	A2 <- Ws
+	
+	
+	A1pluA1 <- A1 + t(A1)	
+	A2pluA2 <- A2 + t(A2)
+	A1pluA1eps<- A1pluA1 %*% epsilon
+	A2pluA2eps<- A2pluA2 %*% epsilon
+
+	ZA1pluA1eps<- crossprod(Zstar, A1pluA1eps)
+	ZA2pluA2eps<- crossprod(Zstar, A2pluA2eps)
+		
+	alpha1 <- -1*ZA1pluA1eps/n
+	alpha2 <- -1*ZA2pluA2eps/n
+	
+	a.vec1 <- Tmat %*% alpha1 
+	a.vec2 <- Tmat %*% alpha2 
+	
+
+    tr22<-sum(diag(A2pluA2 %*% A2pluA2))/(2*n)
+#   tr22<-(2*trA2A2 + 2* t(as.vector(t(Ws))) %*% as.vector(Ws)) /(2*n)
+    tr11<-sum(diag(A1pluA1 %*% A1pluA1))/(2*n)
+	tr12<-sum(diag(A1pluA1 %*% A2pluA2))/(2*n)
+
+	a1.a1 <-crossprod(a.vec1) /n 
+	a2.a2 <-crossprod(a.vec2) /n 
+	a1.a2 <-crossprod(a.vec1, a.vec2) /n 
+
+    vecA1<- diag(A1)
+    vecA2<- diag(A2)
+
+    vecA1vecA1<- crossprod(vecA1)/n
+    vecA2vecA2<- crossprod(vecA2)/n
+    vecA1vecA2<- crossprod(vecA1,vecA2)/n 
+
+     a1.vecA1<- crossprod(a.vec1, vecA1)
+     a1.vecA2<- crossprod(a.vec1, vecA2)
+     a2.vecA2<- crossprod(a.vec2, vecA2)
+     a2.vecA1<- crossprod(a.vec2, vecA1)    
+    
+    la.term11 <- (a1.vecA1 + a1.vecA1)/n
+    la.term12 <- (a1.vecA2 + a2.vecA1)/n
+    la.term22 <- (a2.vecA2 + a2.vecA2)/n
+    
+    
+     effe<- mu4-3*sigma2^2
+    
+    # phi11<- as.numeric(sigma2^2 * tr11 )
+    # phi12<- as.numeric(sigma2^2 * tr12 )
+    # phi21<- as.numeric(sigma2^2 * tr12 )
+    # phi22<- as.numeric(sigma2^2 * tr22 )
+
+    phi11<- as.numeric(sigma2^2 * tr11 + effe *    vecA1vecA1 )
+    phi12<- as.numeric(sigma2^2 * tr12 + effe *    vecA1vecA2 )
+    phi21<- as.numeric(sigma2^2 * tr12 + effe *    vecA1vecA2 )
+    phi22<- as.numeric(sigma2^2 * tr22 + effe *    vecA2vecA2 )
+  
+
+     Phi<-cbind(rbind(phi11,phi21),rbind(phi12,phi22))
+    Phiinv<-solve(Phi)
+    
+list(Phi = Phi, Phiinv = Phiinv, Pmat= Pmat, A1 = A1, A2 =A2, a.vec1 = a.vec1, a.vec2 = a.vec2, epsilon = epsilon, Zstar = Zstar )	
+}
+
+
+
+Omega_hom_mod<-function(rho, Pmat, A1, A2, a.vec1, a.vec2, Hmat, bigG, Phirri, epsilon, Zstar){
+
+	n<-length(epsilon)
+	Jota<- bigG %*% c(1,2*rho)
+	mu3<-sum(epsilon^3) / n
+	sigma2<-crossprod(epsilon)/n
+	Qhh <- crossprod(Hmat)/n
+	 a.vec <- cbind(as.numeric(a.vec1), as.numeric(a.vec2))
+	 a.vec.d<-cbind(diag(A1), diag(A2))
+	
+	Psidd <- as.numeric(sigma2)	* Qhh
+	 Psidr1<- as.numeric(sigma2)/n * crossprod(Hmat, a.vec)
+	Psidr2<- mu3/n * crossprod(Hmat, a.vec.d)
+	Psidr<-  Psidr2
+	
+	Omegadd<- as.matrix(t(Pmat) %*% Psidd %*% Pmat)
+	Omegarr<- as.matrix(solve(t(Jota) %*% Phirri %*% Jota))
+	Omegadr<- as.matrix(t(Pmat) %*% Psidr %*% Phirri %*% Jota %*% Omegarr)
+	Omega<- cbind(rbind(Omegadd, t(Omegadr)), rbind(Omegadr, Omegarr))/n
+	list(Omega = Omega)
+}
+
+
+Omega_het_mod<-function(rho, Pmat, A1, A2, a.vec1, a.vec2, Hmat, bigG, Phirri, epsilon, Zstar, Ws, step1.c){
+	n<-length(epsilon)
+	gamma<-epsilon^2
+	gammas<-Matrix(diag(n), sparse = TRUE)
+    diag(gammas) <- gamma
+     
+	Jota<- bigG %*% c(1,2*rho)
+	 a.vec <- cbind(as.numeric(a.vec1), as.numeric(a.vec2))
+
+if(step1.c){
+	IrW <- Diagonal(n) - rho * Ws
+	IrWp <-	t(IrW)
+	Psidd <-  (t(Hmat) %*% IrW %*% gammas %*% IrWp %*% Hmat)/n
+	Psidr<- (t(Hmat) %*% IrW %*% gammas %*% a.vec)/n
+}
+
+else{	
+	Psidd <-  (t(Hmat) %*% gammas %*% Hmat)/n
+	 Psidr<- (t(Hmat) %*% gammas %*% a.vec)/n
+	}
+	Omegadd<- as.matrix(t(Pmat) %*% Psidd %*% Pmat)
+	Omegarr<- as.matrix(solve(t(Jota) %*% Phirri %*% Jota))
+	 Omegadr<- as.matrix(t(Pmat) %*% Psidr %*% Phirri %*% Jota %*% Omegarr)
+	 # print(dim(Omegadr))
+	Omega<- cbind(rbind(Omegadd, matrix(0,1,2)), rbind(matrix(0,2,1), Omegarr))/n
+	list(Omega = Omega)
+}
